@@ -10,6 +10,7 @@
  * @todo: Add an option for default server config
  * @todo: Maybe support the generation of the https certificate too?
  * @todo: Maybe add some kind of option sanity check in the future?
+ * @todo: Maybe add the option to mass create configurations?
  *
  * All code is released under The Unlicense
  * See UNLICENSE in the root directory for the full text of The Unlicense
@@ -21,10 +22,10 @@ define('NJEENY_STRUCTURE',
     'GENERAL' =>
       [
         'domain' => ['Enter the domain', []],
-        'path' => ['Enter the path', []],
+        'path' => ['Enter the path - no trailing slash', []],
         'subdomains' => ['Include Subdomains?', ['Yes', 'No']],
         'https' => ['Force HTTPS?', ['Yes', 'No']],
-        'cms' => ['CMS', ['Autodetect', 'drupal', 'wordpress', 'none']],
+        'cms' => ['CMS', ['autodetect', 'drupal', 'wordpress', 'none']],
       ],
     'CMS SPECIFIC' =>
       [
@@ -61,6 +62,9 @@ function main() {
 /**
  * Helper function.
  * Processes a category.
+ * @param array Associative array with the questions that need to be asked
+ * @param array The settings' array
+ * @return void
  */
 function processCategory($cat, &$settings) {
   foreach ($cat as $setting_name => $setting) {
@@ -70,6 +74,27 @@ function processCategory($cat, &$settings) {
                                questionInputGen($setting[0]) :
                                questionOptionsGen($setting[0], $setting[1], $return_index);
   }
+}
+
+/**
+ * Helper function.
+ * Given the settings so far, determines the CMS and updates the settings.
+ * Functionality required by the "autodetect" feature.
+ * @param array The settings' array
+ * @return void
+ */
+function cmsAutodetect(&$settings) {
+  $settings['cms'] = 'none';
+  $drupal_path = $settings['path'] . '/sites/default/default.settings.php';
+  $drupal_path_v8 = $settings['path'] . '/sites/default/default.services.yml';
+  $wordpress_path = $settings['path'] . '/wp-config.php';
+  if (file_exists($drupal_path)) {
+    $settings['cms'] = 'drupal';
+    // We only support D7 and D8
+    $settings['cms_version'] = file_exists($drupal_path_v8) ? 8 : 7;
+  }
+  if (file_exists($wordpress_path))
+    $settings['cms'] = 'wordpress';
 }
 
 /**
@@ -116,6 +141,8 @@ function questionOptionsGen($message, $options, $return_index = TRUE) {
 /**
  * Helper function.
  * Create a presentable caption.
+ * @param string Message to the user (no new line)
+ * @return string An "underlined" version of the caption.
  */
 function generateCaption($message) {
   $caption = strtoupper($message) . "\n";
@@ -123,4 +150,20 @@ function generateCaption($message) {
     $caption .= "=";
   $caption .= "\n";
   return $caption;
+}
+
+/**
+ * Helper function.
+ * Reads the contents of a template file and makes the necessary substitutions.
+ * @param string The name of the file (no extension)
+ * @param array Assoc array with substitutions (key replaced by value)
+ * @return string The processed template file's contents.
+ */
+function processTemplate($template, $replacements) {
+  $path = "templates/$template.tpl";
+  $content = file_get_contents($path);
+  foreach ($replacements as $key => $value) {
+    $content = str_replace($key, $value, $content);
+  }
+  return $content;
 }
