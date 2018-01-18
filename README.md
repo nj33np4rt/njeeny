@@ -8,6 +8,6 @@ njeeny is a simple php command line tool that allows you to create sensible and 
 
 Right now it's not even functional. I will write some instructions once the first working version is out.
 
-## Misc
+## TODO
 
 Well, I need to update this readme file at some point.
