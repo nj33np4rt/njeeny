@@ -64,9 +64,11 @@ function main() {
  */
 function processCategory($cat, &$settings) {
   foreach ($cat as $setting_name => $setting) {
+    // We need to return the key and not the index in the cms choice question
+    $return_index = ($setting_name != 'cms');
     $settings[$setting_name] = empty($setting[1]) ?
                                questionInputGen($setting[0]) :
-                               questionOptionsGen($setting[0], $setting[1]);
+                               questionOptionsGen($setting[0], $setting[1], $return_index);
   }
 }
 
