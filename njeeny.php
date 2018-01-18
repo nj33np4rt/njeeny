@@ -48,8 +48,25 @@ define('NJEENY_STRUCTURE',
 main();
 
 function main() {
-  foreach (NJEENY_STRUCTURE as $key => $value) {
-    
+  $settings = array();
+  foreach (NJEENY_STRUCTURE as $cat_name => $cat) {
+    print generateCaption($cat_name);
+    // For now we can do some hacky coding to determine
+    // which category we're in
+    $cat_to_process = empty($settings['cms']) ? $cat : $cat[$settings['cms']];
+    processCategory($cat_to_process, $settings);
+  }
+}
+
+/**
+ * Helper function.
+ * Processes a category.
+ */
+function processCategory($cat, &$settings) {
+  foreach ($cat as $setting_name => $setting) {
+    $settings[$setting_name] = empty($setting[1]) ?
+                               questionInputGen($setting[0]) :
+                               questionOptionsGen($setting[0], $setting[1]);
   }
 }
 
