@@ -11,6 +11,8 @@
  * @todo: Maybe support the generation of the https certificate too?
  * @todo: Maybe add some kind of option sanity check in the future?
  * @todo: Maybe add the option to mass create configurations?
+ * @todo: Support wordpress multisites(?)
+ * @todo: Support wordpress subdirectory installations(?)
  *
  * All code is released under The Unlicense
  * See UNLICENSE in the root directory for the full text of The Unlicense
@@ -25,6 +27,7 @@ define('NJEENY_STRUCTURE',
         'path' => ['Enter the path - no trailing slash', []],
         'subdomains' => ['Include Subdomains?', ['Yes', 'No']],
         'https' => ['Force HTTPS?', ['Yes', 'No']],
+        'enable' => ['Also enable configuration?', ['Yes', 'No']],
         'cms' => ['CMS', ['autodetect', 'drupal', 'wordpress', 'none']],
       ],
     'CMS SPECIFIC' =>
@@ -36,10 +39,12 @@ define('NJEENY_STRUCTURE',
           ],
         'wordpress' =>
           [
+            // www is not relevant in wordpress (enforceable through CMS)
             // @todo: any special stuff for wordpress?
           ],
         'none' =>
           [
+            'www' => ['Force www subdomain?', ['Yes', 'No']],
             'php' => ['Do you need PHP support?', ['Yes', 'No']],
           ],
       ]
@@ -48,14 +53,44 @@ define('NJEENY_STRUCTURE',
 
 main();
 
+/**
+ * Main function.
+ * This is the only function that is executed by our script
+ * and delegates (almost) all the functionality to helper functions.
+ */
 function main() {
   $settings = array();
   foreach (NJEENY_STRUCTURE as $cat_name => $cat) {
     print generateCaption($cat_name);
+    // Handle the "autodetect" option before processing the category
+    // or even setting the category to process
+    if (!empty($settings['cms']) && $settings['cms'] == 'autodetect')
+      cmsAutodetect($settings);
     // For now we can do some hacky coding to determine
     // which category we're in
     $cat_to_process = empty($settings['cms']) ? $cat : $cat[$settings['cms']];
     processCategory($cat_to_process, $settings);
+  }
+
+  // Generate and print the result and that's it for our main().
+  $result = generateConfFile($settings);
+  print "\n$result\n";
+
+}
+
+/**
+ * Helper function.
+ * Given the settings, generates a configuration file.
+ * @param array The settings' array
+ * @return string A result message
+ */
+function generateConfFile($settings) {
+  // Wrap everything in a try-catch block so that PHP can do
+  // the heavy lifting of the exception handling for us
+  try {
+
+  } catch (Exception $e) {
+    return $e->getMessage();
   }
 }
 
@@ -86,12 +121,13 @@ function processCategory($cat, &$settings) {
 function cmsAutodetect(&$settings) {
   $settings['cms'] = 'none';
   $drupal_path = $settings['path'] . '/sites/default/default.settings.php';
-  $drupal_path_v8 = $settings['path'] . '/sites/default/default.services.yml';
   $wordpress_path = $settings['path'] . '/wp-config.php';
   if (file_exists($drupal_path)) {
     $settings['cms'] = 'drupal';
     // We only support D7 and D8
-    $settings['cms_version'] = file_exists($drupal_path_v8) ? 8 : 7;
+    // If we need to do something differently for D8, below is a method to do it:
+    // $drupal_path_v8 = $settings['path'] . '/sites/default/default.services.yml';
+    // $settings['cms_version'] = file_exists($drupal_path_v8) ? 8 : 7;
   }
   if (file_exists($wordpress_path))
     $settings['cms'] = 'wordpress';
@@ -150,6 +186,16 @@ function generateCaption($message) {
     $caption .= "=";
   $caption .= "\n";
   return $caption;
+}
+
+/**
+ * Helper function.
+ * Generate an one-line configuration entry.
+ * Useful in cases where creating a template file would be too much of a hassle.
+ * @param array An assoc array with the conf entry as key and the value(s) in an array
+ * @return string The formatted entry (with the closing semicolon)
+ */
+function generateConfEntry($data) {
 }
 
 /**
