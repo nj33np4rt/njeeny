@@ -19,7 +19,7 @@
  * (or visit http://unlicense.org)
  */
 
-define('NJEENY_STRUCTURE', 
+define('NJEENY_SINGLE_CONF_GENERATE', 
   [
     'GENERAL' =>
       [
@@ -59,8 +59,20 @@ main();
  * and delegates (almost) all the functionality to helper functions.
  */
 function main() {
+  // For now we can only generate configuration files, so only one option
+  // We will add more stuff in the future (e.g. verify existing configurations)
+  $main_question = questionOptionsGen('What do?', ['Generate Single file']);
+  if ($main_question == 0)
+    generateSingleConfMain();
+}
+
+/**
+ * Helper function.
+ * Generate a single nginx configuration file.
+ */
+function generateSingleConfMain() {
   $settings = array();
-  foreach (NJEENY_STRUCTURE as $cat_name => $cat) {
+  foreach (NJEENY_SINGLE_CONF_GENERATE as $cat_name => $cat) {
     print generateCaption($cat_name);
     // Handle the "autodetect" option before processing the category
     // or even setting the category to process
@@ -72,10 +84,9 @@ function main() {
     processCategory($cat_to_process, $settings);
   }
 
-  // Generate and print the result and that's it for our main().
+  // Generate and print the result and that's it for this type of functionality.
   $result = generateConfFile($settings);
   print "\n$result\n";
-
 }
 
 /**
@@ -85,13 +96,56 @@ function main() {
  * @return string A result message
  */
 function generateConfFile($settings) {
+  $contents = '';
   // Wrap everything in a try-catch block so that PHP can do
   // the heavy lifting of the exception handling for us
   try {
-
+    $contents .= generateRedirects($settings);
   } catch (Exception $e) {
     return $e->getMessage();
   }
+}
+
+/**
+ * Helper function.
+ */
+function generateRedirects($settings) {
+  $contents = '';
+  if ($settings['https'] == 0) {
+    $contents .= "\n";
+    $contents .= ($settings['subdomains'] == 0) ? 
+                 generateRedirectServer($settings['domain'], TRUE, 
+    $contents .= "\n";
+  } else if (isset($settings['www'] && $settings['www'] == 0) {
+
+  }
+
+  return $contents;
+}
+
+/**
+ * Helper function.
+ */
+function generateRedirectServer($server_name, $https = FALSE, $subdomains = FALSE, $www = FALSE) {
+  $output  = "server {\n";
+  $output .= "\tlisten\t";
+  $output .= $https ? "443 ssl;\n" : "80;\n";
+  $output .= "\tserver_name\t$server_name";
+  $output .= $subdomains ? " *.$server_name;\n" : ";\n";
+  $output .= $https ? "\t" . generateHTTPSDefaults($server_name) . "\n" : "";
+  $output .= "\treturn\t301 http";
+  $output .= $https ? "s" : "";
+  $output .= "://";
+  $output .= $www ? "www." : "";
+  $output .= $server_name . '$request_uri;' . "\n";
+  $output .= "}";
+  return $output;
+}
+
+/**
+ * Helper function.
+ */
+function generateHTTPSDefaults($server_name) {
 }
 
 /**
@@ -196,6 +250,12 @@ function generateCaption($message) {
  * @return string The formatted entry (with the closing semicolon)
  */
 function generateConfEntry($data) {
+  $output = '';
+  foreach ($data as $key => $value) {
+    $values = implode(" ", $value);
+    $output .= "\t$key\t$values;\n";
+  }
+  return trim($output);
 }
 
 /**
@@ -205,7 +265,7 @@ function generateConfEntry($data) {
  * @param array Assoc array with substitutions (key replaced by value)
  * @return string The processed template file's contents.
  */
-function processTemplate($template, $replacements) {
+function processTemplate($template, $replacements = array()) {
   $path = "templates/$template.tpl";
   $content = file_get_contents($path);
   foreach ($replacements as $key => $value) {
