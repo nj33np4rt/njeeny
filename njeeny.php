@@ -108,16 +108,34 @@ function generateConfFile($settings) {
 
 /**
  * Helper function.
+ * Given the settings' array generates the redirects that are required
+ * in order to respect our user's wishes.
+ * @todo: There must be a cleaner/more elegant way to do this.
+ * @param array The settings' array
+ * @return string Redirection servers for our configuration.
  */
 function generateRedirects($settings) {
   $contents = '';
-  if ($settings['https'] == 0) {
-    $contents .= "\n";
-    $contents .= ($settings['subdomains'] == 0) ? 
-                 generateRedirectServer($settings['domain'], TRUE, 
-    $contents .= "\n";
-  } else if (isset($settings['www'] && $settings['www'] == 0) {
-
+  if (isset($settings['www'] && $settings['www'] == 0) {
+    if ($settings['https'] == 0) { // + https + www
+      $contents .= "\n";
+      $contents .= generateRedirectServer($settings['domain'], FALSE, ($settings['subdomains'] == 0), TRUE, TRUE);
+      $contents .= "\n";
+      $contents .= generateRedirectServer($settings['domain'], TRUE, ($settings['subdomains'] == 0), TRUE, TRUE);
+      $contents .= "\n";
+    } else { // - https + www
+      $contents .= "\n";
+      $contents .= generateRedirectServer($settings['domain'], FALSE, ($settings['subdomains'] == 0), TRUE, FALSE);
+      $contents .= "\n";
+    }
+  } else {
+    if ($settings['https'] == 0) { // + https - www
+      $contents .= "\n";
+      $contents .= generateRedirectServer($settings['domain'], FALSE, ($settings['subdomains'] == 0), FALSE, TRUE);
+      $contents .= "\n";
+    } else { // - https - www
+      // No redirects needed
+    }
   }
 
   return $contents;
@@ -125,8 +143,14 @@ function generateRedirects($settings) {
 
 /**
  * Helper function.
+ * @param string The name of the server
+ * @param bool Whether the SOURCE of the redirect is 443
+ * @param bool Whether we need to include subdomains
+ * @param bool Whether we need to force www
+ * @param bool Whether the destination of the redirect is a secure location
+ * @return string A proper nginx server configuration matching the input
  */
-function generateRedirectServer($server_name, $https = FALSE, $subdomains = FALSE, $www = FALSE) {
+function generateRedirectServer($server_name, $https, $subdomains, $www, $secure_dest) {
   $output  = "server {\n";
   $output .= "\tlisten\t";
   $output .= $https ? "443 ssl;\n" : "80;\n";
@@ -134,7 +158,7 @@ function generateRedirectServer($server_name, $https = FALSE, $subdomains = FALS
   $output .= $subdomains ? " *.$server_name;\n" : ";\n";
   $output .= $https ? "\t" . generateHTTPSDefaults($server_name) . "\n" : "";
   $output .= "\treturn\t301 http";
-  $output .= $https ? "s" : "";
+  $output .= $secure_dest ? "s" : "";
   $output .= "://";
   $output .= $www ? "www." : "";
   $output .= $server_name . '$request_uri;' . "\n";
