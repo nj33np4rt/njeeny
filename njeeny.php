@@ -101,6 +101,7 @@ function generateConfFile($settings) {
   // the heavy lifting of the exception handling for us
   try {
     $contents .= generateRedirects($settings);
+    return $contents;
   } catch (Exception $e) {
     return $e->getMessage();
   }
@@ -168,8 +169,27 @@ function generateRedirectServer($server_name, $https, $subdomains, $www, $secure
 
 /**
  * Helper function.
+ * Generates default HTTPS settings.
+ * Uses ssl-defaults template.
+ * @param string The name of the server
+ * @return string A block of text for sane ssl configuration
  */
 function generateHTTPSDefaults($server_name) {
+  // Sane defaults
+  // @todo: More configurations in question-stage should define the following
+  $template = "ssl-defaults";
+  $dhparams = "/opt/dhparam/dhparams.pem";
+  $fullchain = "/etc/letsencrypt/live/{$server_name}/fullchain.pem";
+  $privkey = "/etc/letsencrypt/live/{$server_name}/privkey.pem";
+
+  $replacements = array(
+                    '{{dhparam}}' => $dhparams,
+                    '{{fullchain}}' => $fullchain,
+                    '{{privkey}}' => $privkey,
+                  );
+
+  return processTemplate($template, $replacements);
+
 }
 
 /**
