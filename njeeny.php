@@ -116,7 +116,7 @@ function generateConfFile($settings) {
  */
 function generateRedirects($settings) {
   $contents = '';
-  if (isset($settings['www'] && $settings['www'] == 0) {
+  if (isset($settings['www']) && $settings['www'] == 0) {
     if ($settings['https'] == 0) { // + https + www
       $contents .= "\n";
       $contents .= generateRedirectServer($settings['domain'], FALSE, ($settings['subdomains'] == 0), TRUE, TRUE);
