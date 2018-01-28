@@ -144,6 +144,7 @@ function generateRedirects($settings) {
 
 /**
  * Helper function.
+ * Generates a redirect server.
  * @param string The name of the server
  * @param bool Whether the SOURCE of the redirect is 443
  * @param bool Whether we need to include subdomains
@@ -165,6 +166,21 @@ function generateRedirectServer($server_name, $https, $subdomains, $www, $secure
   $output .= $server_name . '$request_uri;' . "\n";
   $output .= "}";
   return $output;
+}
+
+/**
+ * Helper function.
+ * Generates the main server configuration.
+ * @param string The name of the server
+ * @param string The site directory
+ * @param bool Whether this is an https server
+ * @param bool Whether we are forcing www subdomain
+ * @param string What type of site this is
+ * @param bool Whether php is enabled for the site
+ * @return string A proper nginx server configuration matching the input
+ */
+function generateMainServer($server_name, $server_path, $https = TRUE, $www = TRUE, $type = 'none', $php = TRUE) {
+
 }
 
 /**
